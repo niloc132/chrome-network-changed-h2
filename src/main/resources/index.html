@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>mac-chrome-network-changed-h2 bug test</title>
+</head>
+<body>
+Hello world
+<script>
+(async function() {
+    async function pump(response, reader) {
+        var result = await reader.read();
+        if (result.done) {
+            console.log('done')
+            return;
+        }
+        console.log(result.value, new TextDecoder('utf-8').decode(result.value) );
+        pump(response, reader);
+    }
+
+    var response = await fetch("/stream")
+    pump(response, response.body.getReader());
+})();
+</script>
+</body>
+</html>
