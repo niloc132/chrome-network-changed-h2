@@ -5,26 +5,54 @@
     <title>mac-chrome-network-changed-h2 bug test</title>
 </head>
 <body>
-Hello world
 <script>
 (async function() {
-    async function pump(response, reader) {
-        var result = await reader.read();
-        if (result.done) {
-            console.log('done')
-            return;
+    async function httpImpl(url, showMsg) {
+        function pump(response, reader) {
+            reader.read().then(result => {
+                if (result.done) {
+                    showMsg(null, null, true)
+                    return;
+                }
+                showMsg(null, new TextDecoder('utf-8').decode(result.value));
+            pump(response, reader);
+            }).catch(err => {
+                showMsg(err);
+            });
         }
-        console.log(result.value, new TextDecoder('utf-8').decode(result.value) );
-        pump(response, reader);
+        url.pathname = '/stream'
+        var response = await fetch(url)
+        pump(response, response.body.getReader());
+    }
+    function websocketImpl(url, showMsg) {
+        url.pathname = 'websocket';
+        var ws = new WebSocket(url);
+        ws.onmessage = e => showMsg(null, e.data);
+        ws.onerror = e => showMsg(e);
+        ws.onclose = e => showMsg(null, null, true);
+    }
+    function show(protocol, port, impl) {
+        var url = new URL(location.href);
+        url.protocol = protocol;
+        url.port = port;
+        function showMsg(failure, success, isDone) {
+            failure && console.error(protocol, port, failure);
+            success && console.log(protocol, port, success);
+            isDone && console.log(protocol, port, isDone);
+        }
+        try {
+            impl(url, showMsg);
+        } catch (err) {
+            showMsg(err);
+        }
     }
 
-    var response = await fetch("/stream")
-    pump(response, response.body.getReader());
-    var url = new URL(location.href);
-    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-    url.pathname = 'websocket';
-    var ws = new WebSocket(url);
-    ws.onmessage = console.log;
+    show('http',  8080, httpImpl);
+    show('ws',    8080, websocketImpl);
+    show('https', 8081, httpImpl);
+    show('wss',   8081, websocketImpl);
+    show('https', 8082, httpImpl);
+    show('wss',   8082, websocketImpl);
 })();
 </script>
 </body>
