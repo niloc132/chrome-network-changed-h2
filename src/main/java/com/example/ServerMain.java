@@ -4,6 +4,7 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -13,6 +14,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+
+import java.util.Set;
 
 /**
  * Starts a webserver on three ports, serving a simple static app that attempts to load a streaming payload
@@ -28,8 +31,10 @@ public class ServerMain {
 
         // Apply cors to everything
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("*"));
 
         ServletContextHandler ctx = new ServletContextHandler();
+        ctx.setServer(server);
         ctx.setContextPath("/");
 
         // Serve a simple stream
@@ -39,6 +44,10 @@ public class ServerMain {
         // Serve plain text files
         ServletHolder defaultServletHolder = ctx.addServlet(DefaultServlet.class, "/");
         defaultServletHolder.setInitParameter("resourceBase", "src/main/resources");
+
+        JakartaWebSocketServletContainerInitializer.configure(ctx, (servletContext, serverContainer) -> {
+            serverContainer.addEndpoint(StreamingWebsocket.class);
+        });
 
         crossOriginHandler.setHandler(ctx);
         server.setHandler(crossOriginHandler);

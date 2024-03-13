@@ -20,6 +20,11 @@ Hello world
 
     var response = await fetch("/stream")
     pump(response, response.body.getReader());
+    var url = new URL(location.href);
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    url.pathname = 'websocket';
+    var ws = new WebSocket(url);
+    ws.onmessage = console.log;
 })();
 </script>
 </body>
