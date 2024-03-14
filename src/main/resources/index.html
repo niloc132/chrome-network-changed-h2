@@ -29,6 +29,7 @@
 </head>
 <body>
 <ul class="links"></ul>
+<div style="clear:both"></div>
 <script>
 (async function() {
     async function httpImpl(url, showMsg) {
@@ -68,15 +69,15 @@
         var url = new URL(location.href);
         url.protocol = protocol;
         url.port = port;
-        link.href = url;
+        link.href = url.toString();
         link.append("open in ", protocol, port);
         var li = document.createElement('li');
         li.append(link);
         links.append(li);
     }
-    addLink('http', 8080)
-    addLink('https', 8081)
-    addLink('https', 8082)
+    addLink('http',  8080);
+    addLink('https', 8081);
+    addLink('https', 8082);
 
     function show(protocol, port, impl) {
         // make a dom element to show this experiment

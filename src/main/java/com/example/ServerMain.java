@@ -19,8 +19,14 @@ import java.util.Set;
 
 /**
  * Starts a webserver on three ports, serving a simple static app that attempts to load a streaming payload
+ * from an http stream, and from a websocket.
  */
 public class ServerMain {
+    private static final String HTTP_1_1_CERT_PATH = System.getProperty("h1certpath", "selfsigned.p12");
+    private static final String HTTP_1_1_SECRET = System.getProperty("h1secret", "secret");
+    private static final String HTTP_2_CERT_PATH = System.getProperty("h2certpath", "selfsigned.p12");
+    private static final String HTTP_2_SECRET = System.getProperty("h1secret", "secret");
+
     public static void main(String[] args) throws Exception {
         Server server = new Server();
 
@@ -64,8 +70,8 @@ public class ServerMain {
         final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2.getProtocol());
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(System.getProperty("h2certpath"));
-        sslContextFactory.setKeyStorePassword("secret");
+        sslContextFactory.setKeyStorePath(HTTP_2_CERT_PATH);
+        sslContextFactory.setKeyStorePassword(HTTP_2_SECRET);
         final SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
 
         ServerConnector h2Connector = new ServerConnector(server, tls, alpn, h2);
@@ -80,8 +86,8 @@ public class ServerMain {
         final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(System.getProperty("h1certpath"));
-        sslContextFactory.setKeyStorePassword("secret");
+        sslContextFactory.setKeyStorePath(HTTP_1_1_CERT_PATH);
+        sslContextFactory.setKeyStorePassword(HTTP_1_1_SECRET);
         final SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
 
         ServerConnector h1Connector = new ServerConnector(server, tls, alpn, h1);
