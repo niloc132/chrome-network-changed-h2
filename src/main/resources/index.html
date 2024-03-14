@@ -3,8 +3,32 @@
 <head>
     <meta charset="utf-8" />
     <title>mac-chrome-network-changed-h2 bug test</title>
+    <style>
+        .links li {
+            float:left;
+            display: block;
+            list-style: none;
+            padding-left: 5px;
+        }
+        .experiment {
+            margin: 4px;
+            border: 1px solid black;
+            float:left;
+        }
+        .experiment.error .header {
+            color: red;
+        }
+        .experiment.done {
+            border: 1px solid grey;
+        }
+        .container {
+            max-height: 200px;
+            overflow-y: scroll;
+        }
+    </style>
 </head>
 <body>
+<ul class="links"></ul>
 <script>
 (async function() {
     async function httpImpl(url, showMsg) {
@@ -28,17 +52,62 @@
         url.pathname = 'websocket';
         var ws = new WebSocket(url);
         ws.onmessage = e => showMsg(null, e.data);
-        ws.onerror = e => showMsg(e);
-        ws.onclose = e => showMsg(null, null, true);
+        ws.onerror = e => showMsg(e.message || "websocket error");
+        ws.onclose = e => {
+            if (e.code === 1000) {
+                showMsg(null, null, true);
+            } else {
+                showMsg(e.code + " " + e.reason)
+            }
+        };
     }
+
+    var links = document.getElementsByClassName('links')[0];
+    function addLink(protocol, port) {
+        var link = document.createElement('a');
+        var url = new URL(location.href);
+        url.protocol = protocol;
+        url.port = port;
+        link.href = url;
+        link.append("open in ", protocol, port);
+        var li = document.createElement('li');
+        li.append(link);
+        links.append(li);
+    }
+    addLink('http', 8080)
+    addLink('https', 8081)
+    addLink('https', 8082)
+
     function show(protocol, port, impl) {
+        // make a dom element to show this experiment
+        var experiment = document.createElement('div');
+        experiment.classList.add('experiment');
+        var header = document.createElement('h3');
+        header.classList.add('header');
+        header.append(protocol, port);
+        experiment.append(header);
+        var container = document.createElement('div');
+        container.classList.add('container');
+        experiment.append(container);
+        document.body.append(experiment);
+
         var url = new URL(location.href);
         url.protocol = protocol;
         url.port = port;
         function showMsg(failure, success, isDone) {
-            failure && console.error(protocol, port, failure);
-            success && console.log(protocol, port, success);
-            isDone && console.log(protocol, port, isDone);
+            var msg = document.createElement('div');
+            if (failure) {
+                experiment.classList.add('error');
+                msg.append(failure);
+            } else if (isDone) {
+                experiment.classList.add('done');
+                msg.append('Done.');
+                msg.classList.add('done');
+            } else {
+                msg.append(success);
+            }
+            container.append(msg);
+            msg.scrollIntoView();
         }
         try {
             impl(url, showMsg);
